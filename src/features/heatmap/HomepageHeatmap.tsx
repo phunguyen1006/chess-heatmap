@@ -14,6 +14,8 @@ export function HomepageHeatmap({
   detected: string | null;
 }) {
   const [year, setYear] = useState(new Date().getFullYear());
+  const currentYear = new Date().getFullYear();
+  const isCurrentYear = year === currentYear;
   const { data, username, loading, error, refresh } = state;
   const puzzles = usePuzzleData(username);
 
@@ -73,13 +75,24 @@ export function HomepageHeatmap({
                 {stats.games.toLocaleString()} games ·{" "}
                 {stats.puzzles
                   ? `${stats.puzzles.toLocaleString()} puzzles · `
-                  : puzzles.data.tracking
+                  : isCurrentYear && puzzles.data.tracking
                     ? `Puzzle tracking started${puzzles.data.tracking.puzzleTrackingStartedLocalDate === localDate(new Date()) ? " today" : ""} · `
                     : ""}
                 {stats.activeDays}{" "}
                 <span className="ci-summary-detail">active </span>
-                days · {stats.current}{" "}
-                <span className="ci-summary-detail">day </span>streak
+                days ·{" "}
+                {isCurrentYear ? (
+                  <>
+                    {stats.current > 0 ? `${stats.current} day streak · ` : ""}
+                    {stats.longest}{" "}
+                    <span className="ci-summary-detail">day </span>longest streak
+                  </>
+                ) : (
+                  <>
+                    {stats.longest}{" "}
+                    <span className="ci-summary-detail">day </span>longest streak
+                  </>
+                )}
               </>
             )}
             {loading && <span className="ci-muted"> · Updating…</span>}
