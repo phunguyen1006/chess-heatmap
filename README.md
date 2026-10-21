@@ -1,59 +1,91 @@
 # Chess.com Activity Heatmap
 
-A lightweight, local-first Chrome extension (Manifest V3) that embeds an interactive GitHub-style annual contribution heatmap directly into your Chess.com homepage.
+[![CI](https://github.com/phunguyen1006/chess-heatmap/actions/workflows/ci.yml/badge.svg)](https://github.com/phunguyen1006/chess-heatmap/actions/workflows/ci.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/phunguyen1006/chess-heatmap?include_prereleases&color=6a9947)](https://github.com/phunguyen1006/chess-heatmap/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-brightgreen)](https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3)
+[![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6.svg)](https://www.typescriptlang.org/)
 
-![Chess.com Activity Heatmap](public/icons/icon128.png)
+A lightweight, local-first Chrome extension that injects an interactive GitHub-style annual contribution heatmap directly into your Chess.com homepage.
 
-## Features
+<p align="center">
+  <img src="public/icons/icon128.png" alt="Chess.com Activity Heatmap Logo" width="128" height="128" />
+</p>
 
-- **GitHub-style Contribution Calendar**: Visualizes your daily activity across 52 weeks with 5 quantile intensity levels.
-- **Year & Mode Navigation**: Browse activity across any year, viewing games, rated puzzles, or combined activity.
+---
+
+## 🌟 Key Features
+
+- **GitHub-style Contribution Calendar**: Visualizes your daily game and puzzle activity across 52 weeks with 5 quantile intensity levels.
+- **Year & Mode Navigation**: Browse your activity across any year, viewing games, rated puzzles, or combined activity.
 - **Streak & Stats Tracking**: Displays current streak, longest streak, total games/puzzles, and daily win/loss breakdown in interactive tooltips.
-- **Native Layout Integration**: Injects seamlessly into the Chess.com homepage grid right below "Play Online" and above native recommendation cards, with zero layout shift.
+- **Seamless DOM Integration**: Injects into the Chess.com homepage layout directly below "Play Online" and above native recommendation cards, with zero layout shift and zero interference with native buttons.
+- **Dynamic SPA Resilience**: Automatically handles SPA route changes and delayed rendering using `ResizeObserver` and `MutationObserver`.
 - **Theme Matching**: Automatically respects light and dark modes and adapts to Chess.com's native button and background palette.
 - **Rated Puzzle Tracker**: Live DOM state machine that tracks completed rated puzzle attempts on `/puzzles/rated`.
 - **Local-First & Private**: Direct communication with the public Chess.com API; all archive data, profile records, and puzzle history are stored locally in IndexedDB.
 
-## Tech Stack
+---
 
-- **React 19** & **TypeScript**
-- **Vite** (Service Worker bundler) & **esbuild** (Isolated IIFE Content Script bundler)
-- **IndexedDB** for local caching
-- **Vitest** with JSDOM for testing
+## 📦 Quick Installation
 
-## Installation & Development
+### Option 1: Install Pre-built Release (Recommended)
 
-### 1. Install dependencies
+1. Download the latest `chess-heatmap-vX.X.X.zip` from the [Releases](https://github.com/phunguyen1006/chess-heatmap/releases) page.
+2. Unzip the downloaded file to a permanent folder on your computer.
+3. Open Google Chrome and navigate to `chrome://extensions/`.
+4. Enable **Developer mode** using the toggle switch in the top-right corner.
+5. Click the **Load unpacked** button in the top-left.
+6. Select the unzipped folder containing `manifest.json`.
+7. Navigate to [chess.com/home](https://www.chess.com/home) and your heatmap will be automatically mounted!
+
+### Option 2: Build From Source
 
 ```bash
+# Clone the repository
+git clone https://github.com/phunguyen1006/chess-heatmap.git
+cd chess-heatmap
+
+# Install dependencies
 npm install
-```
 
-### 2. Build the extension
-
-```bash
+# Build extension
 npm run build
 ```
 
-This compiles:
-- `dist/background.js` (Vite ES module background service worker)
-- `dist/content.js` and `dist/content.css` (esbuild IIFE bundle injected into Chess.com)
-- Copies `manifest.json` and extension icons into `dist/`
+Then load the generated `dist/` directory into Chrome via `chrome://extensions/` as an unpacked extension.
 
-### 3. Load into Google Chrome
+---
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Toggle **Developer mode** on (top-right corner)
-3. Click **Load unpacked**
-4. Select the `dist/` folder inside this repository
-5. Navigate to [chess.com/home](https://www.chess.com/home) to see your activity heatmap
+## 🛠️ Architecture
 
-### 4. Running Tests
+- **Extension Framework**: Chrome Extension Manifest V3.
+- **Hybrid Bundling**:
+  - **Vite**: Compiles the ES module background service worker (`src/background/serviceWorker.ts`).
+  - **esbuild**: Compiles the isolated IIFE content script (`src/content/chessComContent.tsx` -> `dist/content.js` & `dist/content.css`) to guarantee seamless execution inside the Chess.com DOM.
+- **Local Database**: IndexedDB schema (`chess-heatmap-db`) storing normalized games, sync metadata, profile archives, and puzzle attempt records.
+- **Intensity Algorithm**: Dataset-wide quantile calculations (`[0.2, 0.4, 0.6, 0.8]`) mapping game & puzzle density to 5 GitHub-style green intensity tiers.
 
-```bash
-npm test
-```
+---
 
-## License
+## 💻 Development Commands
 
-GPL-3.0-only
+| Command | Description |
+| :--- | :--- |
+| `npm run typecheck` | Run TypeScript compiler type checking without emitting files |
+| `npm test` | Run Vitest unit & integration test suite |
+| `npm run build` | Full production build (`tsc` + `vite build` + `esbuild`) |
+| `npm run package` | Build and create distributable ZIP archive with SHA-256 checksums |
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/phunguyen1006/chess-heatmap/issues). See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.

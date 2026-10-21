@@ -2,14 +2,24 @@
   "name": "chess-heatmap",
   "version": "1.0.0",
   "private": true,
-  "description": "Interactive annual chess activity heatmap for Chess.com.",
-  "license": "GPL-3.0-only",
+  "description": "Interactive GitHub-style annual activity heatmap Chrome extension for Chess.com.",
+  "license": "MIT",
+  "author": "Nguyen Phu",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/phunguyen1006/chess-heatmap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/phunguyen1006/chess-heatmap/issues"
+  },
+  "homepage": "https://github.com/phunguyen1006/chess-heatmap#readme",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build && node scripts/build-content.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package": "npm run build && node scripts/package-release.mjs"
   },
   "dependencies": {
     "react": "^19.1.1",
