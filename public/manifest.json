@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chess.com Activity Heatmap",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Interactive GitHub-style annual activity heatmap directly on your Chess.com homepage.",
   "permissions": ["storage"],
   "minimum_chrome_version": "116",

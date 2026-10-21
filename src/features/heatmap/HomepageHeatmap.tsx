@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DataState } from "../state/useData";
 import { combinedActivity } from "../../analytics/puzzles";
+import type { ActivityMode } from "../../analytics/puzzles";
 import { usePuzzleData } from "../state/usePuzzleData";
 import { localDate } from "../../shared/dates";
 import { ActivityHeatmap } from "./ActivityHeatmap";
 import { Setup } from "../components/Setup";
+import { DayDetail } from "./DayDetail";
 
 export function HomepageHeatmap({
   state,
@@ -14,6 +16,8 @@ export function HomepageHeatmap({
   detected: string | null;
 }) {
   const [year, setYear] = useState(new Date().getFullYear());
+  const [mode, setMode] = useState<ActivityMode>("all");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
   const isCurrentYear = year === currentYear;
   const { data, username, loading, error, refresh } = state;
@@ -37,6 +41,11 @@ export function HomepageHeatmap({
     [games, attempts],
   );
 
+  const gameStats = useMemo(() => combinedActivity(games, []), [games]);
+  const puzzleStats = useMemo(() => combinedActivity([], attempts), [attempts]);
+  const activeStats =
+    mode === "games" ? gameStats : mode === "puzzles" ? puzzleStats : stats;
+
   useEffect(() => {
     if (username) void refresh([year]);
   }, [year, username, refresh]);
@@ -45,20 +54,54 @@ export function HomepageHeatmap({
     <section className="ci-scope ci-home-card">
       <header className="ci-row">
         <h2>Chess Activity</h2>
-        <label className="ci-year">
-          Year{" "}
-          <select
-            aria-label="Activity year"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-          >
-            {[...new Set([year, ...data.years])]
-              .sort((a, b) => b - a)
-              .map((y) => (
-                <option key={y}>{y}</option>
-              ))}
-          </select>
-        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div className="ci-mode-pills" role="tablist" aria-label="Activity type">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "all"}
+              className={`ci-mode-pill ${mode === "all" ? "ci-active" : ""}`}
+              onClick={() => setMode("all")}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "games"}
+              className={`ci-mode-pill ${mode === "games" ? "ci-active" : ""}`}
+              onClick={() => setMode("games")}
+            >
+              Games
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "puzzles"}
+              className={`ci-mode-pill ${mode === "puzzles" ? "ci-active" : ""}`}
+              onClick={() => setMode("puzzles")}
+            >
+              Puzzles
+            </button>
+          </div>
+          <label className="ci-year">
+            Year{" "}
+            <select
+              aria-label="Activity year"
+              value={year}
+              onChange={(e) => {
+                setYear(Number(e.target.value));
+                setSelectedDate(null);
+              }}
+            >
+              {[...new Set([year, ...data.years])]
+                .sort((a, b) => b - a)
+                .map((y) => (
+                  <option key={y}>{y}</option>
+                ))}
+            </select>
+          </label>
+        </div>
       </header>
 
       {!state.settingsLoaded ? (
@@ -72,24 +115,32 @@ export function HomepageHeatmap({
               "Loading statistics…"
             ) : (
               <>
-                {stats.games.toLocaleString()} games ·{" "}
-                {stats.puzzles
-                  ? `${stats.puzzles.toLocaleString()} puzzles · `
-                  : isCurrentYear && puzzles.data.tracking
-                    ? `Puzzle tracking started${puzzles.data.tracking.puzzleTrackingStartedLocalDate === localDate(new Date()) ? " today" : ""} · `
-                    : ""}
-                {stats.activeDays}{" "}
+                {mode !== "puzzles" && (
+                  <span>{stats.games.toLocaleString()} games · </span>
+                )}
+                {mode !== "games" && (
+                  <span>
+                    {stats.puzzles > 0
+                      ? `${stats.puzzles.toLocaleString()} puzzles · `
+                      : isCurrentYear && puzzles.data.tracking
+                        ? `Puzzle tracking started${puzzles.data.tracking.puzzleTrackingStartedLocalDate === localDate(new Date()) ? " today" : ""} · `
+                        : mode === "puzzles"
+                          ? "0 puzzles · "
+                          : ""}
+                  </span>
+                )}
+                {activeStats.activeDays}{" "}
                 <span className="ci-summary-detail">active </span>
                 days ·{" "}
                 {isCurrentYear ? (
                   <>
-                    {stats.current > 0 ? `${stats.current} day streak · ` : ""}
-                    {stats.longest}{" "}
+                    {activeStats.current > 0 ? `${activeStats.current} day streak · ` : ""}
+                    {activeStats.longest}{" "}
                     <span className="ci-summary-detail">day </span>longest streak
                   </>
                 ) : (
                   <>
-                    {stats.longest}{" "}
+                    {activeStats.longest}{" "}
                     <span className="ci-summary-detail">day </span>longest streak
                   </>
                 )}
@@ -102,12 +153,22 @@ export function HomepageHeatmap({
             compact
             games={games}
             attempts={attempts}
-            mode="all"
+            mode={mode}
             trackingSince={
               puzzles.data.tracking?.puzzleTrackingStartedLocalDate
             }
             year={year}
+            onDate={(d) => setSelectedDate((prev) => (prev === d ? null : d))}
           />
+
+          {selectedDate && (
+            <DayDetail
+              date={selectedDate}
+              games={games}
+              attempts={attempts}
+              onClose={() => setSelectedDate(null)}
+            />
+          )}
 
           {!games.length && !attempts.length && !loading && (
             <div className="ci-empty-inline">
