@@ -1,6 +1,8 @@
 export type TimeClass = "rapid" | "blitz" | "bullet" | "daily" | "unknown";
 export type Result = "win" | "draw" | "loss";
 export type Color = "white" | "black";
+export type Platform = "chesscom" | "lichess";
+export type PlatformFilter = "all" | "chesscom" | "lichess";
 
 export interface RawPlayer {
   username?: string;
@@ -24,6 +26,7 @@ export interface RawGame {
 
 export interface NormalizedGame {
   id: string;
+  platform?: Platform;
   url: string;
   username: string;
   endTime: number;
@@ -74,12 +77,15 @@ export interface UserRecord {
 
 export interface Settings {
   username?: string;
+  lichessUsername?: string;
+  lichessToken?: string;
   trackPuzzleActivity?: boolean;
   theme?: "light" | "dark";
 }
 
 export interface PuzzleAttempt {
   id: string;
+  platform?: Platform;
   username: string;
   puzzleId: string | null;
   attemptedAt: number;
@@ -89,7 +95,7 @@ export interface PuzzleAttempt {
   ratingAfter: number | null;
   ratingChange: number | null;
   puzzleRating: number | null;
-  source: "live_tracker" | "history_bootstrap";
+  source: "live_tracker" | "history_bootstrap" | "lichess_api";
   createdAt: number;
 }
 
@@ -129,4 +135,7 @@ export type Request =
   | { type: "ci:puzzle-start"; username: string }
   | { type: "ci:puzzle-save"; attempt: PuzzleAttempt }
   | { type: "ci:puzzle-setting"; enabled: boolean }
-  | { type: "ci:puzzle-clear"; username: string };
+  | { type: "ci:puzzle-clear"; username: string }
+  | { type: "ci:lichess-connect"; username: string; token?: string }
+  | { type: "ci:lichess-disconnect" }
+  | { type: "ci:lichess-sync"; force?: boolean };

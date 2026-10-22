@@ -1,5 +1,6 @@
 import { database, idbResult, transactionDone } from "./database";
 import { localDate } from "../../shared/dates";
+import { getSettings } from "./settingsRepository";
 import type {
   PuzzleAttempt,
   PuzzleSnapshot,
@@ -9,20 +10,32 @@ import type {
 export async function puzzleSnapshot(
   username: string,
 ): Promise<PuzzleSnapshot> {
+  const settings = await getSettings();
+  const lichessUser = settings.lichessUsername?.toLowerCase();
+
   const tx = (await database()).transaction(
     ["puzzleAttempts", "puzzleTrackingState"],
     "readonly",
   );
-  const [attempts, tracking] = await Promise.all([
+  const [attempts, lichessAttempts, tracking] = await Promise.all([
     idbResult(
-      tx.objectStore("puzzleAttempts").index("username").getAll(username),
+      tx.objectStore("puzzleAttempts").index("username").getAll(username.toLowerCase()),
     ) as Promise<PuzzleAttempt[]>,
+    lichessUser && lichessUser !== username.toLowerCase()
+      ? (idbResult(
+          tx.objectStore("puzzleAttempts").index("username").getAll(lichessUser),
+        ) as Promise<PuzzleAttempt[]>)
+      : Promise.resolve([]),
     idbResult(tx.objectStore("puzzleTrackingState").get(username)) as Promise<
       PuzzleTrackingState | undefined
     >,
   ]);
+
+  const allAttempts = [...attempts, ...lichessAttempts];
   return {
-    attempts: attempts.sort((a, b) => a.attemptedAt - b.attemptedAt),
+    attempts: (allAttempts as PuzzleAttempt[])
+      .map((a) => ({ ...a, platform: a.platform ?? "chesscom" }))
+      .sort((a, b) => a.attemptedAt - b.attemptedAt),
     tracking: tracking ?? null,
   };
 }

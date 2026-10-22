@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { Snapshot, Settings } from "../../shared/types";
-import { SETTINGS_KEY } from "../../shared/constants";
+import { SETTINGS_KEY, LICHESS_CHANGE_KEY } from "../../shared/constants";
 import { send } from "./client";
 
 const initial: Snapshot = {
@@ -139,6 +139,15 @@ export function useData() {
         Settings | undefined;
       if (next?.username && next.username !== account.current)
         void activate(next.username);
+      if (changes[LICHESS_CHANGE_KEY] && account.current) {
+        const user = account.current,
+          gen = generation.current;
+        void send<Snapshot>({ type: "ci:snapshot", username: user })
+          .then((cached) => {
+            if (gen === generation.current) setData(cached);
+          })
+          .catch(() => undefined);
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => {

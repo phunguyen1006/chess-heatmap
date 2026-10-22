@@ -47,6 +47,7 @@ export function normalizeGame(
     typeof n === "number" && Number.isFinite(n) ? n : null;
   return {
     id: `${username}:${identity}`,
+    platform: "chesscom",
     username,
     url,
     endTime: raw.end_time,

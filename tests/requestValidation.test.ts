@@ -58,6 +58,8 @@ it("rejects unsupported requests at the message boundary", async () => {
     { type: "ci:analysis", username: "alice", action: "arbitrary" },
     { type: "ci:unknown-action" },
     { type: "ci:theme-setting", theme: "unsupported-theme" },
+    { type: "ci:lichess-connect", username: "" },
+    { type: "ci:lichess-connect", username: "valid", token: 12345 },
   ]) {
     expect(await handleMessage(message as never)).toMatchObject({
       ok: false,

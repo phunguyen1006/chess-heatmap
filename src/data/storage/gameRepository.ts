@@ -15,6 +15,7 @@ export async function getGames(username: string): Promise<NormalizedGame[]> {
   return (games as NormalizedGame[])
     .filter((g) => validCompletionTime(g.endTime))
     .map((g) => ({
+      platform: g.platform ?? "chesscom",
       ...g,
       ...(typeof g.pgn === "string" && g.pgn.includes('[ECOUrl "')
         ? normalizeOpening(g.pgn)

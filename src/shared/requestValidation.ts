@@ -15,6 +15,19 @@ export function validRequest(value: unknown): value is Request {
       return m.theme === "light" || m.theme === "dark";
     case "ci:puzzle-setting":
       return typeof m.enabled === "boolean";
+    case "ci:lichess-disconnect":
+      return true;
+    case "ci:lichess-sync":
+      return optionalBoolean("force");
+    case "ci:lichess-connect": {
+      const u = m.username;
+      const validLichessUser =
+        typeof u === "string" && /^[a-zA-Z0-9_-]{2,30}$/.test(u);
+      const validToken =
+        m.token === undefined ||
+        (typeof m.token === "string" && m.token.length <= 128);
+      return validLichessUser && validToken;
+    }
     case "ci:connect":
     case "ci:snapshot":
     case "ci:puzzles":

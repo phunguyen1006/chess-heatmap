@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { DataState } from "../state/useData";
 import { combinedActivity } from "../../analytics/puzzles";
 import type { ActivityMode } from "../../analytics/puzzles";
+import type { PlatformFilter } from "../../shared/types";
 import { usePuzzleData } from "../state/usePuzzleData";
 import { localDate } from "../../shared/dates";
 import { ActivityHeatmap } from "./ActivityHeatmap";
 import { Setup } from "../components/Setup";
 import { DayDetail } from "./DayDetail";
+import { SettingsModal } from "../components/SettingsModal";
 
 export function HomepageHeatmap({
   state,
@@ -17,13 +19,15 @@ export function HomepageHeatmap({
 }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [mode, setMode] = useState<ActivityMode>("all");
+  const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const currentYear = new Date().getFullYear();
   const isCurrentYear = year === currentYear;
   const { data, username, loading, error, refresh } = state;
   const puzzles = usePuzzleData(username);
 
-  const attempts = useMemo(
+  const rawAttempts = useMemo(
     () =>
       puzzles.data.attempts.filter(
         (a) => Number(a.localDate.slice(0, 4)) === year,
@@ -31,9 +35,29 @@ export function HomepageHeatmap({
     [puzzles.data.attempts, year],
   );
 
-  const games = useMemo(
+  const rawGames = useMemo(
     () => data.games.filter((g) => Number(g.localDate.slice(0, 4)) === year),
     [data.games, year],
+  );
+
+  const games = useMemo(
+    () =>
+      rawGames.filter((g) => {
+        if (platform === "all") return true;
+        const gPlatform = g.platform ?? "chesscom";
+        return gPlatform === platform;
+      }),
+    [rawGames, platform],
+  );
+
+  const attempts = useMemo(
+    () =>
+      rawAttempts.filter((a) => {
+        if (platform === "all") return true;
+        const aPlatform = a.platform ?? "chesscom";
+        return aPlatform === platform;
+      }),
+    [rawAttempts, platform],
   );
 
   const stats = useMemo(
@@ -54,7 +78,36 @@ export function HomepageHeatmap({
     <section className="ci-scope ci-home-card">
       <header className="ci-row">
         <h2>Chess Activity</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <div className="ci-mode-pills" role="tablist" aria-label="Platform">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={platform === "all"}
+              className={`ci-mode-pill ${platform === "all" ? "ci-active" : ""}`}
+              onClick={() => setPlatform("all")}
+            >
+              All Platforms
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={platform === "chesscom"}
+              className={`ci-mode-pill ${platform === "chesscom" ? "ci-active" : ""}`}
+              onClick={() => setPlatform("chesscom")}
+            >
+              Chess.com
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={platform === "lichess"}
+              className={`ci-mode-pill ${platform === "lichess" ? "ci-active" : ""}`}
+              onClick={() => setPlatform("lichess")}
+            >
+              Lichess
+            </button>
+          </div>
           <div className="ci-mode-pills" role="tablist" aria-label="Activity type">
             <button
               type="button"
@@ -84,6 +137,15 @@ export function HomepageHeatmap({
               Puzzles
             </button>
           </div>
+          <button
+            type="button"
+            className="ci-gear-btn"
+            title="Activity Heatmap Settings"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            ⚙️
+          </button>
           <label className="ci-year">
             Year{" "}
             <select
@@ -204,6 +266,11 @@ export function HomepageHeatmap({
           </footer>
         </>
       )}
+
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </section>
   );
 }

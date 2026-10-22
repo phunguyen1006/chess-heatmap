@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PuzzleSnapshot, Settings } from "../../shared/types";
-import { SETTINGS_KEY, PUZZLE_CHANGE_KEY } from "../../shared/constants";
+import {
+  SETTINGS_KEY,
+  PUZZLE_CHANGE_KEY,
+  LICHESS_CHANGE_KEY,
+} from "../../shared/constants";
 import { send } from "./client";
 
 const empty: PuzzleSnapshot = { attempts: [], tracking: null };
@@ -46,7 +50,8 @@ export function usePuzzleData(username: string) {
             | { username?: string }
             | undefined
         )?.username === username ||
-        changes[SETTINGS_KEY]
+        changes[SETTINGS_KEY] ||
+        changes[LICHESS_CHANGE_KEY]
       )
         void reload();
     };

@@ -3,6 +3,8 @@ import {
   cleanUsername,
   ApiFailure,
 } from "../data/api/chessComApi";
+import { getLichessProfile } from "../data/api/lichessApi";
+import { syncLichessData, clearLichessData } from "../data/sync/lichessSync";
 import { getSettings, setSettings } from "../data/storage/settingsRepository";
 import { snapshot, syncYears } from "../data/sync/syncManager";
 import { getUser, saveUser } from "../data/storage/gameRepository";
@@ -14,7 +16,7 @@ import {
   savePuzzleAttempt,
   clearPuzzleHistory,
 } from "../data/storage/puzzleRepository";
-import { PUZZLE_CHANGE_KEY } from "../shared/constants";
+import { PUZZLE_CHANGE_KEY, LICHESS_CHANGE_KEY } from "../shared/constants";
 
 function invalidRequestMessage(message: unknown) {
   const type =
@@ -154,6 +156,53 @@ export async function handleMessage(
           ok: true,
           data: await snapshot(cleanUsername(message.username)),
         };
+      }
+
+      case "ci:lichess-connect": {
+        const u = message.username.trim();
+        const profile = await getLichessProfile(u, message.token);
+        const lichessUsername = profile.username.toLowerCase();
+        await setSettings({
+          lichessUsername,
+          lichessToken: message.token?.trim() || undefined,
+        });
+        // Initial sync of Lichess data
+        void syncLichessData(lichessUsername, message.token, true, onProgress).then(async () => {
+          await chrome.storage.local.set({
+            [LICHESS_CHANGE_KEY]: { username: lichessUsername, token: crypto.randomUUID() },
+          });
+        });
+        return { ok: true, data: { username: lichessUsername } };
+      }
+
+      case "ci:lichess-disconnect": {
+        const current = await getSettings();
+        if (current.lichessUsername) {
+          await clearLichessData(current.lichessUsername);
+        }
+        await setSettings({
+          lichessUsername: undefined,
+          lichessToken: undefined,
+        });
+        await chrome.storage.local.set({
+          [LICHESS_CHANGE_KEY]: { username: "", token: crypto.randomUUID() },
+        });
+        return { ok: true, data: true };
+      }
+
+      case "ci:lichess-sync": {
+        const current = await getSettings();
+        if (!current.lichessUsername) return { ok: true, data: false };
+        await syncLichessData(
+          current.lichessUsername,
+          current.lichessToken,
+          message.force,
+          onProgress,
+        );
+        await chrome.storage.local.set({
+          [LICHESS_CHANGE_KEY]: { username: current.lichessUsername, token: crypto.randomUUID() },
+        });
+        return { ok: true, data: true };
       }
 
       default:

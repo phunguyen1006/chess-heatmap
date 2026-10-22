@@ -30,18 +30,29 @@ export function gameForSnapshot(game: NormalizedGame): NormalizedGame {
   };
 }
 
+import { getSettings } from "../storage/settingsRepository";
+import { database, idbResult } from "../storage/database";
+
 export async function snapshot(username: string): Promise<Snapshot> {
-  const [games, user] = await Promise.all([
+  const settings = await getSettings();
+  const lichessUser = settings.lichessUsername?.toLowerCase();
+
+  const [games, user, lichessGames] = await Promise.all([
     getGames(username),
     getUser(username),
+    lichessUser && lichessUser !== username.toLowerCase()
+      ? getGames(lichessUser)
+      : Promise.resolve([]),
   ]);
+
+  const allGames = [...games, ...lichessGames];
   const years = new Set([
     new Date().getFullYear(),
-    ...games.map((g) => Number(g.localDate.slice(0, 4))),
+    ...allGames.map((g) => Number(g.localDate.slice(0, 4))),
     ...(user?.archives ?? []).map((url) => Number(url.split("/").at(-2))),
   ]);
   return {
-    games: games.map(gameForSnapshot),
+    games: allGames.map(gameForSnapshot),
     years: [...years].filter(Number.isFinite).sort((a, b) => b - a),
     lastSync: user?.lastSync ?? 0,
     version: user?.version ?? 0,

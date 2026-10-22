@@ -18,13 +18,15 @@ A lightweight, local-first Chrome extension that injects an interactive GitHub-s
 ## 🌟 Key Features
 
 - **GitHub-style Contribution Calendar**: Visualizes your daily game and puzzle activity across 52 weeks with 5 quantile intensity levels.
-- **Year & Mode Navigation**: Browse your activity across any year, viewing games, rated puzzles, or combined activity.
-- **Streak & Stats Tracking**: Displays current streak, longest streak, total games/puzzles, and daily win/loss breakdown in interactive tooltips.
+- **Year, Mode & Platform Navigation**: Browse your activity across any year, switch between All / Games / Puzzles activity modes, and filter by platform (`All Platforms`, `Chess.com`, `Lichess`).
+- **Lichess Multi-Platform Synchronization**: Seamlessly integrate your Lichess account to sync mobile puzzle training and games into your unified Chess.com heatmap.
+- **Day Detail Breakdown**: Click any cell on the heatmap to expand an interactive breakdown of all games and puzzles played that day, with platform badges (`♟️ Chess.com` vs `♞ Lichess`), openings, time controls, and direct links.
+- **Streak & Stats Tracking**: Displays current streak (with past years correctly showing longest streak), longest streak, total games/puzzles, and daily win/loss breakdown in interactive tooltips.
 - **Seamless DOM Integration**: Injects into the Chess.com homepage layout directly below "Play Online" and above native recommendation cards, with zero layout shift and zero interference with native buttons.
 - **Dynamic SPA Resilience**: Automatically handles SPA route changes and delayed rendering using `ResizeObserver` and `MutationObserver`.
 - **Theme Matching**: Automatically respects light and dark modes and adapts to Chess.com's native button and background palette.
 - **Rated Puzzle Tracker**: Live DOM state machine that tracks completed rated puzzle attempts on `/puzzles/rated`.
-- **Local-First & Private**: Direct communication with the public Chess.com API; all archive data, profile records, and puzzle history are stored locally in IndexedDB.
+- **Local-First & Private**: Direct communication with the public Chess.com & Lichess APIs; Personal Access Tokens and historical data are stored 100% locally in `chrome.storage.local` and IndexedDB.
 
 ---
 

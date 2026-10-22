@@ -6,26 +6,47 @@ export function database(): Promise<IDBDatabase> {
   return (pending ??= new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     let abandoned = false;
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (event) => {
       const db = req.result;
+      const oldVersion = event.oldVersion;
+
       if (!db.objectStoreNames.contains("games")) {
         const store = db.createObjectStore("games", { keyPath: "id" });
         store.createIndex("username", "username");
+        store.createIndex("platform", "platform");
+      } else {
+        const store = req.transaction?.objectStore("games");
+        if (store && !store.indexNames.contains("platform")) {
+          store.createIndex("platform", "platform");
+        }
       }
+
       if (!db.objectStoreNames.contains("archives")) {
         const store = db.createObjectStore("archives", { keyPath: "id" });
         store.createIndex("username", "username");
       }
       if (!db.objectStoreNames.contains("users"))
         db.createObjectStore("users", { keyPath: "username" });
+
       if (!db.objectStoreNames.contains("puzzleAttempts")) {
         const store = db.createObjectStore("puzzleAttempts", { keyPath: "id" });
         store.createIndex("username", "username");
+        store.createIndex("platform", "platform");
         store.createIndex("localDate", ["username", "localDate"]);
         store.createIndex("attemptedAt", ["username", "attemptedAt"]);
+      } else {
+        const store = req.transaction?.objectStore("puzzleAttempts");
+        if (store && !store.indexNames.contains("platform")) {
+          store.createIndex("platform", "platform");
+        }
       }
+
       if (!db.objectStoreNames.contains("puzzleTrackingState"))
         db.createObjectStore("puzzleTrackingState", { keyPath: "username" });
+
+      if (!db.objectStoreNames.contains("lichessSync")) {
+        db.createObjectStore("lichessSync", { keyPath: "username" });
+      }
     };
     req.onsuccess = () => {
       if (abandoned) {

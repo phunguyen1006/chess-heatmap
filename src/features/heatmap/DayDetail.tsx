@@ -99,6 +99,12 @@ export function DayDetail({
                   >
                     {game.result.toUpperCase()}
                   </span>
+                  <span
+                    className={`ci-badge-platform ci-badge-${game.platform === "lichess" ? "lichess" : "chesscom"}`}
+                    title={`Played on ${game.platform === "lichess" ? "Lichess" : "Chess.com"}`}
+                  >
+                    {game.platform === "lichess" ? "♞ Lichess" : "♟️ Chess.com"}
+                  </span>
                   <span className="ci-day-game-speed">
                     {timeClassIcon(game.timeClass)}
                   </span>
@@ -131,7 +137,7 @@ export function DayDetail({
                       rel="noopener noreferrer"
                       className="ci-day-game-link"
                     >
-                      View on Chess.com ↗
+                      {game.platform === "lichess" ? "View on Lichess ↗" : "View on Chess.com ↗"}
                     </a>
                   )}
                 </div>
@@ -152,6 +158,11 @@ export function DayDetail({
                 >
                   {attempt.result.toUpperCase()}
                 </span>
+                <span
+                  className={`ci-badge-platform ci-badge-${attempt.platform === "lichess" ? "lichess" : "chesscom"}`}
+                >
+                  {attempt.platform === "lichess" ? "♞ Lichess" : "♟️ Chess.com"}
+                </span>
                 {attempt.puzzleRating !== null && (
                   <span className="ci-day-puzzle-rating">
                     Rating: {attempt.puzzleRating}
@@ -166,7 +177,11 @@ export function DayDetail({
                 )}
                 {attempt.puzzleId && (
                   <a
-                    href={`https://www.chess.com/puzzles/problem/${attempt.puzzleId}`}
+                    href={
+                      attempt.platform === "lichess"
+                        ? `https://lichess.org/training/${attempt.puzzleId}`
+                        : `https://www.chess.com/puzzles/problem/${attempt.puzzleId}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="ci-day-game-link"

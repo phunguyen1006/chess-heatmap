@@ -1,7 +1,8 @@
 export const DB_NAME = "chess-heatmap-db";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 export const SETTINGS_KEY = "chessHeatmap.settings";
 export const PUZZLE_CHANGE_KEY = "chessHeatmap.puzzleChange";
+export const LICHESS_CHANGE_KEY = "chessHeatmap.lichessChange";
 export const CURRENT_MONTH_TTL = 5 * 60_000;
 export const MANUAL_REFRESH_COOLDOWN = 30_000;
 export const INDEX_TTL = 60 * 60_000;
