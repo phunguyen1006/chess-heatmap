@@ -8,7 +8,6 @@ import { localDate } from "../../shared/dates";
 import { ActivityHeatmap } from "./ActivityHeatmap";
 import { Setup } from "../components/Setup";
 import { DayDetail } from "./DayDetail";
-import { SettingsModal } from "../components/SettingsModal";
 
 export function HomepageHeatmap({
   state,
@@ -21,7 +20,6 @@ export function HomepageHeatmap({
   const [mode, setMode] = useState<ActivityMode>("all");
   const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const currentYear = new Date().getFullYear();
   const isCurrentYear = year === currentYear;
   const { data, username, loading, error, refresh } = state;
@@ -78,7 +76,8 @@ export function HomepageHeatmap({
     <section className="ci-scope ci-home-card">
       <header className="ci-row">
         <h2>Chess Activity</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+          {/* Platform Segmented Control */}
           <div className="ci-mode-pills" role="tablist" aria-label="Platform">
             <button
               type="button"
@@ -87,7 +86,7 @@ export function HomepageHeatmap({
               className={`ci-mode-pill ${platform === "all" ? "ci-active" : ""}`}
               onClick={() => setPlatform("all")}
             >
-              All Platforms
+              All
             </button>
             <button
               type="button"
@@ -108,6 +107,8 @@ export function HomepageHeatmap({
               Lichess
             </button>
           </div>
+
+          {/* Activity Mode Segmented Control */}
           <div className="ci-mode-pills" role="tablist" aria-label="Activity type">
             <button
               type="button"
@@ -137,15 +138,8 @@ export function HomepageHeatmap({
               Puzzles
             </button>
           </div>
-          <button
-            type="button"
-            className="ci-gear-btn"
-            title="Activity Heatmap Settings"
-            aria-label="Settings"
-            onClick={() => setSettingsOpen(true)}
-          >
-            ⚙️
-          </button>
+
+          {/* Year selector */}
           <label className="ci-year">
             Year{" "}
             <select
@@ -266,11 +260,6 @@ export function HomepageHeatmap({
           </footer>
         </>
       )}
-
-      <SettingsModal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
     </section>
   );
 }

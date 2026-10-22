@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess Activity Heatmap Settings</title>
+    <style>
+      :root {
+        --ci-bg: #ffffff;
+        --ci-text: #262522;
+        --ci-muted: #6f6d69;
+        --ci-border: #e2e4dc;
+        --ci-card: #f9f9f7;
+        --ci-accent: #6a9947;
+        --ci-accent-hover: #567f39;
+        --ci-danger: #a31f1f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ci-bg: #21201d;
+          --ci-text: #eae8e1;
+          --ci-muted: #9e9c96;
+          --ci-border: #3b3a36;
+          --ci-card: #2b2a26;
+          --ci-accent: #81b64c;
+          --ci-accent-hover: #6a9947;
+          --ci-danger: #ff8585;
+        }
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        width: 360px;
+        min-height: 420px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        color: var(--ci-text);
+        background: var(--ci-bg);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/popup/index.tsx"></script>
+  </body>
+</html>

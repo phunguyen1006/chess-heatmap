@@ -19,6 +19,7 @@ for (const file of [
   "content.js",
   "content.css",
   "background.js",
+  "popup.html",
   "manifest.json",
 ]) {
   if (!(await stat(`dist/${file}`)).size)
