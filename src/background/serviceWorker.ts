@@ -4,7 +4,7 @@ import {
   ApiFailure,
 } from "../data/api/chessComApi";
 import { getLichessProfile } from "../data/api/lichessApi";
-import { syncLichessData, clearLichessData } from "../data/sync/lichessSync";
+import { syncLichessData, clearLichessData, getLichessSyncState } from "../data/sync/lichessSync";
 import { getSettings, setSettings } from "../data/storage/settingsRepository";
 import { snapshot, syncYears } from "../data/sync/syncManager";
 import { getUser, saveUser } from "../data/storage/gameRepository";
@@ -43,6 +43,47 @@ function mutatePuzzles(
   const next = puzzleMutations.then(action, action);
   puzzleMutations = next.catch(() => undefined);
   return next;
+}
+
+const LICHESS_ALARM = "lichess-auto-sync";
+const SYNC_INTERVAL_MINUTES = 30;
+let lichessOperations: Promise<unknown> = Promise.resolve();
+
+function serializeLichess<T>(action: () => Promise<T>): Promise<T> {
+  const next = lichessOperations.then(action, action);
+  lichessOperations = next.catch(() => undefined);
+  return next;
+}
+
+async function syncConnectedLichess(force = false, onProgress?: () => void) {
+  const current = await getSettings();
+  if (!current.lichessUsername) return false;
+  const state = await getLichessSyncState(current.lichessUsername);
+  if (!force && state?.lastSuccessfulSync &&
+      Date.now() - state.lastSuccessfulSync < SYNC_INTERVAL_MINUTES * 60_000) return false;
+  try {
+    await syncLichessData(current.lichessUsername, current.lichessToken, force, onProgress);
+  } finally {
+    // Even a partial sync may have written new data.
+    await chrome.storage.local.set({
+      [LICHESS_CHANGE_KEY]: { username: current.lichessUsername, token: crypto.randomUUID() },
+    });
+  }
+  return true;
+}
+
+// Alarms survive service worker shutdown; recreate them if Chrome removed them.
+async function ensureLichessAlarm() {
+  if (!(await chrome.alarms.get(LICHESS_ALARM))) {
+    await chrome.alarms.create(LICHESS_ALARM, { periodInMinutes: SYNC_INTERVAL_MINUTES });
+  }
+}
+if (chrome.alarms) {
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === LICHESS_ALARM)
+      void serializeLichess(() => syncConnectedLichess()).catch(console.warn);
+  });
+  void ensureLichessAlarm().catch(console.warn);
 }
 
 export async function handleMessage(
@@ -158,52 +199,28 @@ export async function handleMessage(
         };
       }
 
-      case "ci:lichess-connect": {
-        const u = message.username.trim();
-        const profile = await getLichessProfile(u, message.token);
-        const lichessUsername = profile.username.toLowerCase();
-        await setSettings({
-          lichessUsername,
-          lichessToken: message.token?.trim() || undefined,
+      case "ci:lichess-connect":
+        return await serializeLichess(async () => {
+          const profile = await getLichessProfile(message.username.trim(), message.token);
+          const lichessUsername = profile.username.toLowerCase();
+          await setSettings({ lichessUsername, lichessToken: message.token?.trim() || undefined });
+          await syncConnectedLichess(true, onProgress);
+          return { ok: true, data: { username: lichessUsername } };
         });
-        // Initial sync of Lichess data
-        void syncLichessData(lichessUsername, message.token, true, onProgress).then(async () => {
+
+      case "ci:lichess-disconnect":
+        return await serializeLichess(async () => {
+          const current = await getSettings();
+          if (current.lichessUsername) await clearLichessData(current.lichessUsername);
+          await setSettings({ lichessUsername: undefined, lichessToken: undefined });
           await chrome.storage.local.set({
-            [LICHESS_CHANGE_KEY]: { username: lichessUsername, token: crypto.randomUUID() },
+            [LICHESS_CHANGE_KEY]: { username: "", token: crypto.randomUUID() },
           });
+          return { ok: true, data: true };
         });
-        return { ok: true, data: { username: lichessUsername } };
-      }
 
-      case "ci:lichess-disconnect": {
-        const current = await getSettings();
-        if (current.lichessUsername) {
-          await clearLichessData(current.lichessUsername);
-        }
-        await setSettings({
-          lichessUsername: undefined,
-          lichessToken: undefined,
-        });
-        await chrome.storage.local.set({
-          [LICHESS_CHANGE_KEY]: { username: "", token: crypto.randomUUID() },
-        });
-        return { ok: true, data: true };
-      }
-
-      case "ci:lichess-sync": {
-        const current = await getSettings();
-        if (!current.lichessUsername) return { ok: true, data: false };
-        await syncLichessData(
-          current.lichessUsername,
-          current.lichessToken,
-          message.force,
-          onProgress,
-        );
-        await chrome.storage.local.set({
-          [LICHESS_CHANGE_KEY]: { username: current.lichessUsername, token: crypto.randomUUID() },
-        });
-        return { ok: true, data: true };
-      }
+      case "ci:lichess-sync":
+        return { ok: true, data: await serializeLichess(() => syncConnectedLichess(message.force, onProgress)) };
 
       default:
         throw new ApiFailure("INVALID_REQUEST", "Unsupported request.");

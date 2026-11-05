@@ -19,7 +19,7 @@ A lightweight, local-first Chrome extension that injects an interactive GitHub-s
 
 - **GitHub-style Contribution Calendar**: Visualizes your daily game and puzzle activity across 52 weeks with 5 quantile intensity levels.
 - **Year, Mode & Platform Navigation**: Browse your activity across any year, switch between All / Games / Puzzles activity modes, and filter by platform (`All Platforms`, `Chess.com`, `Lichess`).
-- **Lichess Multi-Platform Synchronization**: Seamlessly integrate your Lichess account to sync mobile puzzle training and games into your unified Chess.com heatmap.
+- **Lichess Multi-Platform Synchronization**: Seamlessly integrate your Lichess account to sync mobile puzzle training and games into your unified Chess.com heatmap. Sync runs when you open Chess.com and approximately every 30 minutes while Chrome is running; repeated requests within 30 minutes of a successful sync are skipped.
 - **Day Detail Breakdown**: Click any cell on the heatmap to expand an interactive breakdown of all games and puzzles played that day, with platform badges (`♟️ Chess.com` vs `♞ Lichess`), openings, time controls, and direct links.
 - **Streak & Stats Tracking**: Displays current streak (with past years correctly showing longest streak), longest streak, total games/puzzles, and daily win/loss breakdown in interactive tooltips.
 - **Seamless DOM Integration**: Injects into the Chess.com homepage layout directly below "Play Online" and above native recommendation cards, with zero layout shift and zero interference with native buttons.

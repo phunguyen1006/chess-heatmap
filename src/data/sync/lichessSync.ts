@@ -14,6 +14,7 @@ export interface LichessSyncState {
   username: string;
   lastGamesSync?: number;
   lastPuzzlesSync?: number;
+  lastSuccessfulSync?: number;
 }
 
 export async function getLichessSyncState(
@@ -43,6 +44,7 @@ export async function syncLichessData(
 
   let newGamesCount = 0;
   let newPuzzlesCount = 0;
+  let failure: unknown;
 
   // 1. Fetch & Store Lichess Games
   try {
@@ -71,6 +73,7 @@ export async function syncLichessData(
       syncState.lastGamesSync = Math.max(syncState.lastGamesSync ?? 0, maxTime);
     }
   } catch (err) {
+    failure = err;
     console.warn("Failed to sync Lichess games:", err);
   }
 
@@ -96,12 +99,15 @@ export async function syncLichessData(
         syncState.lastPuzzlesSync = Date.now();
       }
     } catch (err) {
+      failure ??= err;
       console.warn("Failed to sync Lichess puzzle activity:", err);
     }
   }
 
+  if (!failure) syncState.lastSuccessfulSync = Date.now();
   await saveLichessSyncState(syncState);
   onProgress?.();
+  if (failure) throw failure;
 
   return { newGames: newGamesCount, newPuzzles: newPuzzlesCount };
 }
