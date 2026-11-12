@@ -1,5 +1,6 @@
 import {
   copyFile,
+  cp,
   mkdir,
   readFile,
   rm,
@@ -26,9 +27,14 @@ for (const file of [
     throw new Error(`Missing release file dist/${file}`);
 }
 
-for (const file of ["LICENSE", "README.md"]) {
+for (const file of ["LICENSE", "README.md", "CONTRIBUTING.md"]) {
   await copyFile(file, `dist/${file}`);
 }
+
+// Keep the README's relative image links working in the extracted release.
+await cp("docs/images", "dist/docs/images", { recursive: true });
+await mkdir("dist/public/icons", { recursive: true });
+await copyFile("public/icons/icon128.png", "dist/public/icons/icon128.png");
 
 await mkdir("releases", { recursive: true });
 const filename = `chess-heatmap-v${pkg.version}.zip`;
