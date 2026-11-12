@@ -22,7 +22,7 @@
   <img src="https://img.shields.io/badge/Chrome-Manifest%20V3-6a9947" alt="Chrome extension using Manifest V3" />
 </p>
 
-![Dark appearance of the chess activity heatmap, showing a year of example game and puzzle activity](docs/images/heatmap-dark.png)
+![Chess.com homepage with the activity heatmap displayed beneath the play area](docs/images/homepage-preview.png)
 
 See your activity at a glance, explore a single day, and bring Chess.com and Lichess into one view. The extension communicates directly with those services and keeps its cache in your browser.
 
@@ -64,7 +64,7 @@ See your activity at a glance, explore a single day, and bring Chess.com and Lic
 
 </details>
 
-Screenshots show the actual extension with fictional local data. Both color palettes are shown; the current settings popup does not yet include a theme switch.
+Screenshots show the actual extension. Account names and avatars are anonymized in the homepage preview; the other previews use fictional local data. Both color palettes are shown; the current settings popup does not yet include a theme switch.
 
 ## Installation
 
