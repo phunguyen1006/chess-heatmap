@@ -37,7 +37,7 @@ export function Setup({
           onChange={(e) => setInput(e.target.value)}
           required
           autoComplete="off"
-          pattern="[a-zA-Z0-9_-]{2,30}"
+          pattern={"[a-zA-Z0-9_\\-]{2,30}"}
         />
       </label>
       <button className="ci-primary" disabled={busy}>

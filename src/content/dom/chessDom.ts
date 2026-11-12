@@ -113,6 +113,33 @@ export function homepageTarget(main = getMain()): {
   playArea?: HTMLElement;
 } | null {
   if (!main) return null;
+
+  // The current home page places its play controls and recommendations in a
+  // single full-width header, above the main and sidebar columns.
+  const header = main.querySelector<HTMLElement>("#home-header");
+  const hero = header && directChild(main, header);
+  const content = [...main.children].find(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement &&
+      child.matches("#home-main.layout-column-one"),
+  );
+  if (
+    hero &&
+    content &&
+    hero !== content &&
+    !!(hero.compareDocumentPosition(content) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+    header.querySelector('a[href*="/play/online"],a[href*="/play/computer"]')
+  ) {
+    return {
+      parent: main,
+      before: content,
+      row: hero,
+      cards: [hero],
+      playArea: hero,
+      strategy: "after-play-full-width",
+    };
+  }
+
   const { recommended, puzzle } = homepageAnchors(main);
   const shared =
     recommended && puzzle ? commonAncestor(recommended, puzzle) : null;

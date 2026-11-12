@@ -319,3 +319,84 @@ it.each(["/game/live/123", "/live", "/play/online", "/play/computer"])(
     expect(document.getElementById(IDS.home)).toBeNull();
   },
 );
+
+it("mounts below the current Chess.com home header when Recommended Match is absent", () => {
+  document.body.innerHTML = `
+    <main class="layout-component home-layout" style="display:grid;grid-template-columns:2fr 1fr;gap:20px 24px">
+      <div class="layout-hero" style="grid-column:1 / -1">
+        <section id="home-header"><div class="header-play-header-grid">
+          <div class="play-online-quick-links-component"><a href="/play/online/new">New Game</a></div>
+          <div class="recommended-activity-component">Recommended Puzzle</div>
+          <div class="recommended-activity-component">Recommended Lesson</div>
+        </div></section>
+      </div>
+      <div id="home-main" class="layout-column-one"><button id="native-main">Continue</button></div>
+      <div id="home-sidebar-container" class="layout-column-two" style="grid-column:2;grid-row:2 / span 2">
+        <section><h2>Daily Puzzle</h2><button id="native-side">Puzzle</button></section>
+      </div>
+    </main>`;
+  const main = document.querySelector("main")!;
+  const hero = main.querySelector(".layout-hero")!;
+  const content = document.getElementById("home-main")!;
+  const sidebar = document.getElementById("home-sidebar-container")!;
+  // Normalize the inline CSS the same way the browser does when it is edited.
+  sidebar.style.cssText = sidebar.style.cssText;
+  const before = main.innerHTML;
+  const onClick = vi.fn();
+  document.getElementById("native-side")!.addEventListener("click", onClick);
+
+  mounted.update();
+  mounted.update();
+
+  const heatmap = document.getElementById(IDS.home);
+  expect(heatmap).not.toBeNull();
+  expect(heatmap!.parentElement).toBe(main);
+  expect(heatmap!.previousElementSibling).toBe(hero);
+  expect(heatmap!.nextElementSibling).toBe(content);
+  expect(heatmap!.style.gridColumn).toBe("1 / -1");
+  expect(heatmap!.style.gridRow).toBe("2 / span 1");
+  expect(content.style.gridRowStart).toBe("3");
+  expect(sidebar.style.gridRowStart).toBe("3");
+  expect(document.querySelectorAll(`#${IDS.home}`)).toHaveLength(1);
+  document.getElementById("native-side")!.click();
+  expect(onClick).toHaveBeenCalledOnce();
+  mounted.dispose();
+  expect(main.innerHTML.replace(/ style=""/g, "")).toBe(before);
+});
+
+it("mounts after delayed play controls without requiring a daily puzzle", () => {
+  document.body.innerHTML = `
+    <main class="home-layout">
+      <div class="layout-hero"><section id="home-header"></section></div>
+      <div id="home-main" class="layout-column-one"></div>
+    </main>`;
+  mounted.update();
+  expect(document.getElementById(IDS.home)).toBeNull();
+
+  document.getElementById("home-header")!.innerHTML =
+    '<a href="/play/online/new">Play</a>';
+  mounted.update();
+  expect(document.querySelectorAll(`#${IDS.home}`)).toHaveLength(1);
+  expect(document.getElementById(IDS.home)!.nextElementSibling?.id).toBe(
+    "home-main",
+  );
+});
+
+it("remounts the current home layout when the main column is replaced", () => {
+  document.body.innerHTML = `
+    <main class="home-layout">
+      <div class="layout-hero"><section id="home-header"><a href="/play/online">Play</a></section></div>
+      <div id="home-main" class="layout-column-one">Old content</div>
+    </main>`;
+  mounted.update();
+  const oldRoot = document.getElementById(IDS.home)!;
+  const replacement = document.createElement("div");
+  replacement.id = "home-main";
+  replacement.className = "layout-column-one";
+  document.getElementById("home-main")!.replaceWith(replacement);
+
+  mounted.update();
+  expect(document.querySelectorAll(`#${IDS.home}`)).toHaveLength(1);
+  expect(document.getElementById(IDS.home)).not.toBe(oldRoot);
+  expect(document.getElementById(IDS.home)!.nextElementSibling).toBe(replacement);
+});
