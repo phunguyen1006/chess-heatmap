@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { DataState } from "../state/useData";
 import { combinedActivity } from "../../analytics/puzzles";
 import type { ActivityMode } from "../../analytics/puzzles";
-import type { PlatformFilter } from "../../shared/types";
+import type { Platform, PlatformFilter } from "../../shared/types";
+import { getEdition } from "../../shared/edition";
+import type { Edition } from "../../shared/edition";
 import { usePuzzleData } from "../state/usePuzzleData";
 import { localDate } from "../../shared/dates";
 import { ActivityHeatmap } from "./ActivityHeatmap";
@@ -12,13 +14,23 @@ import { DayDetail } from "./DayDetail";
 export function HomepageHeatmap({
   state,
   detected,
+  hostPlatform = "chesscom",
+  edition = getEdition(),
 }: {
   state: DataState;
   detected: string | null;
+  hostPlatform?: Platform;
+  edition?: Edition;
 }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [mode, setMode] = useState<ActivityMode>("all");
-  const [platform, setPlatform] = useState<PlatformFilter>("all");
+  const [selectedPlatform, setPlatform] = useState<PlatformFilter>("all");
+  const platform: PlatformFilter =
+    edition === "chesscom"
+      ? "chesscom"
+      : edition === "lichess"
+        ? "lichess"
+        : selectedPlatform;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
   const isCurrentYear = year === currentYear;
@@ -76,37 +88,42 @@ export function HomepageHeatmap({
     <section className="ci-scope ci-home-card">
       <header className="ci-row">
         <h2>Chess Activity</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-          {/* Platform Segmented Control */}
-          <div className="ci-mode-pills" role="tablist" aria-label="Platform">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={platform === "all"}
-              className={`ci-mode-pill ${platform === "all" ? "ci-active" : ""}`}
-              onClick={() => setPlatform("all")}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={platform === "chesscom"}
-              className={`ci-mode-pill ${platform === "chesscom" ? "ci-active" : ""}`}
-              onClick={() => setPlatform("chesscom")}
-            >
-              Chess.com
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={platform === "lichess"}
-              className={`ci-mode-pill ${platform === "lichess" ? "ci-active" : ""}`}
-              onClick={() => setPlatform("lichess")}
-            >
-              Lichess
-            </button>
-          </div>
+        <div
+          className="ci-controls"
+          style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}
+        >
+          {/* Platform Segmented Control (only shown in the unified 'all' edition) */}
+          {edition === "all" && (
+            <div className="ci-mode-pills" role="tablist" aria-label="Platform">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={platform === "all"}
+                className={`ci-mode-pill ${platform === "all" ? "ci-active" : ""}`}
+                onClick={() => setPlatform("all")}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={platform === "chesscom"}
+                className={`ci-mode-pill ${platform === "chesscom" ? "ci-active" : ""}`}
+                onClick={() => setPlatform("chesscom")}
+              >
+                Chess.com
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={platform === "lichess"}
+                className={`ci-mode-pill ${platform === "lichess" ? "ci-active" : ""}`}
+                onClick={() => setPlatform("lichess")}
+              >
+                Lichess
+              </button>
+            </div>
+          )}
 
           {/* Activity Mode Segmented Control */}
           <div className="ci-mode-pills" role="tablist" aria-label="Activity type">
@@ -163,7 +180,7 @@ export function HomepageHeatmap({
       {!state.settingsLoaded ? (
         <p className="ci-summary">Loading local history…</p>
       ) : !username ? (
-        <Setup state={state} detected={detected} />
+        <Setup state={state} detected={detected} hostPlatform={hostPlatform} />
       ) : (
         <>
           <p className="ci-summary">
@@ -222,6 +239,7 @@ export function HomepageHeatmap({
               date={selectedDate}
               games={games}
               attempts={attempts}
+              edition={edition}
               onClose={() => setSelectedDate(null)}
             />
           )}

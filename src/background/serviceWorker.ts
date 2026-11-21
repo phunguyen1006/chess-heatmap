@@ -17,6 +17,7 @@ import {
   clearPuzzleHistory,
 } from "../data/storage/puzzleRepository";
 import { PUZZLE_CHANGE_KEY, LICHESS_CHANGE_KEY } from "../shared/constants";
+import { getEdition } from "../shared/edition";
 
 function invalidRequestMessage(message: unknown) {
   const type =
@@ -55,14 +56,41 @@ function serializeLichess<T>(action: () => Promise<T>): Promise<T> {
   return next;
 }
 
-async function syncConnectedLichess(force = false, onProgress?: () => void) {
+async function syncConnectedLichess(
+  force = false,
+  onProgress?: () => void,
+  years?: number[],
+) {
   const current = await getSettings();
   if (!current.lichessUsername) return false;
   const state = await getLichessSyncState(current.lichessUsername);
-  if (!force && state?.lastSuccessfulSync &&
-      Date.now() - state.lastSuccessfulSync < SYNC_INTERVAL_MINUTES * 60_000) return false;
+  const hasUnsyncedYear =
+    Array.isArray(years) &&
+    years.some((y) => !(state?.syncedYears ?? []).includes(y));
+  if (
+    !force &&
+    !hasUnsyncedYear &&
+    state?.lastSuccessfulSync &&
+    Date.now() - state.lastSuccessfulSync < SYNC_INTERVAL_MINUTES * 60_000
+  )
+    return false;
   try {
-    await syncLichessData(current.lichessUsername, current.lichessToken, force, onProgress);
+    if (years !== undefined) {
+      await syncLichessData(
+        current.lichessUsername,
+        current.lichessToken,
+        force,
+        onProgress,
+        years,
+      );
+    } else {
+      await syncLichessData(
+        current.lichessUsername,
+        current.lichessToken,
+        force,
+        onProgress,
+      );
+    }
   } finally {
     // Even a partial sync may have written new data.
     await chrome.storage.local.set({
@@ -78,7 +106,7 @@ async function ensureLichessAlarm() {
     await chrome.alarms.create(LICHESS_ALARM, { periodInMinutes: SYNC_INTERVAL_MINUTES });
   }
 }
-if (chrome.alarms) {
+if (chrome.alarms && getEdition() !== "chesscom") {
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === LICHESS_ALARM)
       void serializeLichess(() => syncConnectedLichess()).catch(console.warn);
@@ -220,7 +248,12 @@ export async function handleMessage(
         });
 
       case "ci:lichess-sync":
-        return { ok: true, data: await serializeLichess(() => syncConnectedLichess(message.force, onProgress)) };
+        return {
+          ok: true,
+          data: await serializeLichess(() =>
+            syncConnectedLichess(message.force, onProgress, message.years),
+          ),
+        };
 
       default:
         throw new ApiFailure("INVALID_REQUEST", "Unsupported request.");

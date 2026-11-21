@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import type { NormalizedGame, PuzzleAttempt } from "../../shared/types";
+import { getEdition } from "../../shared/edition";
+import type { Edition } from "../../shared/edition";
 import { displayDate } from "../../shared/dates";
 
 interface DayDetailProps {
@@ -7,6 +9,7 @@ interface DayDetailProps {
   games: NormalizedGame[];
   attempts: PuzzleAttempt[];
   onClose: () => void;
+  edition?: Edition;
 }
 
 export function DayDetail({
@@ -14,6 +17,7 @@ export function DayDetail({
   games,
   attempts,
   onClose,
+  edition = getEdition(),
 }: DayDetailProps) {
   const dayGames = useMemo(
     () =>
@@ -99,12 +103,14 @@ export function DayDetail({
                   >
                     {game.result.toUpperCase()}
                   </span>
-                  <span
-                    className={`ci-badge-platform ci-badge-${game.platform === "lichess" ? "lichess" : "chesscom"}`}
-                    title={`Played on ${game.platform === "lichess" ? "Lichess" : "Chess.com"}`}
-                  >
-                    {game.platform === "lichess" ? "♞ Lichess" : "♟️ Chess.com"}
-                  </span>
+                  {edition === "all" && (
+                    <span
+                      className={`ci-badge-platform ci-badge-${game.platform === "lichess" ? "lichess" : "chesscom"}`}
+                      title={`Played on ${game.platform === "lichess" ? "Lichess" : "Chess.com"}`}
+                    >
+                      {game.platform === "lichess" ? "♞ Lichess" : "♟️ Chess.com"}
+                    </span>
+                  )}
                   <span className="ci-day-game-speed">
                     {timeClassIcon(game.timeClass)}
                   </span>
@@ -158,11 +164,13 @@ export function DayDetail({
                 >
                   {attempt.result.toUpperCase()}
                 </span>
-                <span
-                  className={`ci-badge-platform ci-badge-${attempt.platform === "lichess" ? "lichess" : "chesscom"}`}
-                >
-                  {attempt.platform === "lichess" ? "♞ Lichess" : "♟️ Chess.com"}
-                </span>
+                {edition === "all" && (
+                  <span
+                    className={`ci-badge-platform ci-badge-${attempt.platform === "lichess" ? "lichess" : "chesscom"}`}
+                  >
+                    {attempt.platform === "lichess" ? "♞ Lichess" : "♟️ Chess.com"}
+                  </span>
+                )}
                 {attempt.puzzleRating !== null && (
                   <span className="ci-day-puzzle-rating">
                     Rating: {attempt.puzzleRating}

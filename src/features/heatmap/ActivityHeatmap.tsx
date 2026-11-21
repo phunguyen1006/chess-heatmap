@@ -84,7 +84,7 @@ export function ActivityHeatmap({
   }, []);
 
   const labels = compact ? 24 : 34;
-  const gap = compact ? (width < 550 ? 1 : 3) : width < 550 ? 1 : 3,
+  const gap = width < 380 ? 1 : width < 580 ? 2 : 3,
     cell = Math.max(
       1,
       Math.min(

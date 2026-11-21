@@ -31,31 +31,63 @@ export function gameForSnapshot(game: NormalizedGame): NormalizedGame {
 }
 
 import { getSettings } from "../storage/settingsRepository";
-import { database, idbResult } from "../storage/database";
+import { getLichessSyncState } from "./lichessSync";
+import { getEdition } from "../../shared/edition";
 
 export async function snapshot(username: string): Promise<Snapshot> {
+  const edition = getEdition();
   const settings = await getSettings();
-  const lichessUser = settings.lichessUsername?.toLowerCase();
+  const chessUser =
+    edition === "lichess" ? undefined : settings.username?.toLowerCase();
+  const lichessUser =
+    edition === "chesscom"
+      ? undefined
+      : settings.lichessUsername?.toLowerCase();
+  const accounts = [
+    ...new Set(
+      [username, chessUser, lichessUser]
+        .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+        .map((u) => u.trim().toLowerCase()),
+    ),
+  ];
 
-  const [games, user, lichessGames] = await Promise.all([
-    getGames(username),
-    getUser(username),
-    lichessUser && lichessUser !== username.toLowerCase()
-      ? getGames(lichessUser)
-      : Promise.resolve([]),
+  const [gameLists, user, lichessState] = await Promise.all([
+    Promise.all(accounts.map((acc) => getGames(acc))),
+    edition === "lichess"
+      ? Promise.resolve(undefined)
+      : getUser(chessUser || username.toLowerCase()),
+    lichessUser ? getLichessSyncState(lichessUser) : Promise.resolve(undefined),
   ]);
 
-  const allGames = [...games, ...lichessGames];
+  const byId = new Map<string, NormalizedGame>();
+  for (const list of gameLists) {
+    for (const g of list) {
+      const gPlatform = g.platform ?? "chesscom";
+      if (edition !== "all" && gPlatform !== edition) continue;
+      byId.set(g.id, g);
+    }
+  }
+  const allGames = [...byId.values()].sort(
+    (a, b) => a.endTime - b.endTime || a.id.localeCompare(b.id),
+  );
+
   const years = new Set([
     new Date().getFullYear(),
     ...allGames.map((g) => Number(g.localDate.slice(0, 4))),
     ...(user?.archives ?? []).map((url) => Number(url.split("/").at(-2))),
+    ...(lichessState?.syncedYears ?? []),
   ]);
+  const lastSync = Math.max(
+    user?.lastSync ?? 0,
+    lichessState?.lastSuccessfulSync ?? 0,
+  );
+  const version =
+    (user?.version ?? 0) + (lichessState?.lastSuccessfulSync ?? 0);
   return {
     games: allGames.map(gameForSnapshot),
     years: [...years].filter(Number.isFinite).sort((a, b) => b - a),
-    lastSync: user?.lastSync ?? 0,
-    version: user?.version ?? 0,
+    lastSync,
+    version,
   };
 }
 

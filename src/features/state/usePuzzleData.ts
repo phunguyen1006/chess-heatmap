@@ -45,11 +45,7 @@ export function usePuzzleData(username: string) {
       changes: Record<string, chrome.storage.StorageChange>,
     ) => {
       if (
-        (
-          changes[PUZZLE_CHANGE_KEY]?.newValue as
-            | { username?: string }
-            | undefined
-        )?.username === username ||
+        changes[PUZZLE_CHANGE_KEY] ||
         changes[SETTINGS_KEY] ||
         changes[LICHESS_CHANGE_KEY]
       )

@@ -10,9 +10,14 @@ import { observePage } from "./dom/pageObserver";
 import { installPuzzleTracker } from "./puzzles/tracker";
 import { useAppearance } from "../features/state/useAppearance";
 import { WidgetBoundary } from "../features/components/WidgetBoundary";
+import { getEdition } from "../shared/edition";
 
-// Request a throttled refresh whenever a Chess.com page is opened.
-void chrome.runtime.sendMessage({ type: "ci:lichess-sync" }).catch(() => undefined);
+// Request a throttled refresh whenever a Chess.com page is opened (in combined edition).
+if (getEdition() !== "chesscom") {
+  void chrome.runtime
+    .sendMessage({ type: "ci:lichess-sync" })
+    .catch(() => undefined);
+}
 
 const puzzleTracker = installPuzzleTracker();
 const roots = new Map<HTMLElement, Root>();

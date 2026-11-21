@@ -1,8 +1,8 @@
 {
   "name": "chess-heatmap",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "private": true,
-  "description": "Interactive GitHub-style annual activity heatmap Chrome extension for Chess.com.",
+  "description": "Interactive GitHub-style annual activity heatmap Chrome extension for Chess.com and Lichess.",
   "license": "MIT",
   "author": "Nguyen Phu",
   "repository": {

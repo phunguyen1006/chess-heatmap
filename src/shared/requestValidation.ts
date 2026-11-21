@@ -7,6 +7,16 @@ export function validRequest(value: unknown): value is Request {
     typeof name === "string" && /^[a-zA-Z0-9_-]{2,30}$/.test(name);
   const optionalBoolean = (key: string) =>
     m[key] === undefined || typeof m[key] === "boolean";
+  const validYears = (years: unknown) =>
+    Array.isArray(years) &&
+    years.length <= 30 &&
+    years.every(
+      (y) =>
+        typeof y === "number" &&
+        Number.isInteger(y) &&
+        y >= 2000 &&
+        y <= new Date().getFullYear() + 1,
+    );
 
   switch (m.type) {
     case "ci:settings":
@@ -18,7 +28,10 @@ export function validRequest(value: unknown): value is Request {
     case "ci:lichess-disconnect":
       return true;
     case "ci:lichess-sync":
-      return optionalBoolean("force");
+      return (
+        optionalBoolean("force") &&
+        (m.years === undefined || validYears(m.years))
+      );
     case "ci:lichess-connect": {
       const u = m.username;
       const validLichessUser =
@@ -48,22 +61,17 @@ export function validRequest(value: unknown): value is Request {
         !!a.id &&
         typeof a.attemptedAt === "number" &&
         Number.isFinite(a.attemptedAt) &&
-        ["solved", "failed", "unknown"].includes(a.result as string)
+        ["solved", "failed", "unknown"].includes(a.result as string) &&
+        (a.platform === undefined ||
+          a.platform === "chesscom" ||
+          a.platform === "lichess")
       );
     }
     case "ci:sync":
       return (
         username(m.username) &&
         optionalBoolean("force") &&
-        Array.isArray(m.years) &&
-        m.years.length <= 30 &&
-        m.years.every(
-          (y) =>
-            typeof y === "number" &&
-            Number.isInteger(y) &&
-            y >= 2000 &&
-            y <= new Date().getFullYear() + 1,
-        )
+        validYears(m.years)
       );
     default:
       return false;

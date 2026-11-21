@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Settings } from "../shared/types";
+import { getEdition } from "../shared/edition";
+import type { Edition } from "../shared/edition";
+import { version } from "../../package.json";
 
 function sendRuntime<T>(message: unknown): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -21,7 +24,9 @@ function sendRuntime<T>(message: unknown): Promise<T> {
   });
 }
 
-export function Popup() {
+export function Popup({ edition = getEdition() }: { edition?: Edition } = {}) {
+  const showChessCom = edition !== "lichess";
+  const showLichess = edition !== "chesscom";
   const [settings, setSettings] = useState<Settings | null>(null);
   const [chessUser, setChessUser] = useState("");
   const [lichessUser, setLichessUser] = useState("");
@@ -52,8 +57,8 @@ export function Popup() {
     setBusy(true);
     setMsg(null);
     try {
-      await sendRuntime({ type: "ci:username-setting", username: chessUser.trim() });
-      setMsg({ text: "Chess.com account updated." });
+      await sendRuntime({ type: "ci:connect", username: chessUser.trim() });
+      setMsg({ text: "Chess.com account connected & updated." });
       await loadSettings();
     } catch (err) {
       setMsg({ text: err instanceof Error ? err.message : "Failed to update", error: true });
@@ -102,8 +107,16 @@ export function Popup() {
     setBusy(true);
     setMsg(null);
     try {
-      if (settings?.lichessUsername) {
+      if (showLichess && settings?.lichessUsername) {
         await sendRuntime({ type: "ci:lichess-sync", force: true });
+      }
+      if (showChessCom && settings?.username) {
+        await sendRuntime({
+          type: "ci:sync",
+          username: settings.username,
+          years: [new Date().getFullYear()],
+          force: true,
+        });
       }
       setMsg({ text: "Sync requested successfully!" });
     } catch (err) {
@@ -114,20 +127,27 @@ export function Popup() {
   };
 
   const isLichessConnected = Boolean(settings?.lichessUsername);
+  const title =
+    edition === "chesscom"
+      ? "Chess.com Heatmap"
+      : edition === "lichess"
+        ? "Lichess Heatmap"
+        : "Chess Heatmap";
+  const icon = edition === "lichess" ? "♞" : "♟️";
 
   return (
     <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ci-border)", paddingBottom: "10px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "16px" }}>♟️</span>
+          <span style={{ fontSize: "16px" }}>{icon}</span>
           <div>
-            <h1 style={{ fontSize: "14px", fontWeight: "700" }}>Chess Heatmap</h1>
+            <h1 style={{ fontSize: "14px", fontWeight: "700" }}>{title}</h1>
             <p style={{ fontSize: "11px", color: "var(--ci-muted)" }}>Activity Heatmap Settings</p>
           </div>
         </div>
         <span style={{ fontSize: "11px", color: "var(--ci-muted)", background: "var(--ci-card)", padding: "2px 6px", borderRadius: "4px" }}>
-          v1.3.0
+          v{version}
         </span>
       </div>
 
@@ -147,49 +167,62 @@ export function Popup() {
       )}
 
       {/* Chess.com Username */}
-      <section style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <label style={{ fontSize: "12px", fontWeight: "600", color: "var(--ci-text)" }}>
-          Chess.com Account
-        </label>
-        <form onSubmit={handleSaveChessUser} style={{ display: "flex", gap: "6px" }}>
-          <input
-            type="text"
-            value={chessUser}
-            onChange={(e) => setChessUser(e.target.value)}
-            placeholder="Username"
-            style={{
-              flex: 1,
-              padding: "6px 8px",
-              borderRadius: "5px",
-              border: "1px solid var(--ci-border)",
-              background: "var(--ci-card)",
-              color: "var(--ci-text)",
-              fontSize: "12px",
-            }}
-          />
-          <button
-            type="submit"
-            disabled={busy || !chessUser.trim()}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "5px",
-              background: "var(--ci-accent)",
-              color: "#fff",
-              border: "none",
-              fontSize: "12px",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-          >
-            Save
-          </button>
-        </form>
-      </section>
+      {showChessCom && (
+        <section style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label style={{ fontSize: "12px", fontWeight: "600", color: "var(--ci-text)" }}>
+            Chess.com Account
+          </label>
+          <form onSubmit={handleSaveChessUser} style={{ display: "flex", gap: "6px" }}>
+            <input
+              type="text"
+              value={chessUser}
+              onChange={(e) => setChessUser(e.target.value)}
+              placeholder="Username"
+              style={{
+                flex: 1,
+                padding: "6px 8px",
+                borderRadius: "5px",
+                border: "1px solid var(--ci-border)",
+                background: "var(--ci-card)",
+                color: "var(--ci-text)",
+                fontSize: "12px",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={busy || !chessUser.trim()}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "5px",
+                background: "var(--ci-accent)",
+                color: "#fff",
+                border: "none",
+                fontSize: "12px",
+                fontWeight: "600",
+                cursor: "pointer",
+              }}
+            >
+              Save
+            </button>
+          </form>
+        </section>
+      )}
 
       {/* Lichess Integration */}
-      <section style={{ display: "flex", flexDirection: "column", gap: "8px", borderTop: "1px solid var(--ci-border)", paddingTop: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: "12px", fontWeight: "600" }}>♞ Lichess Integration</span>
+      {showLichess && (
+        <section
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            borderTop: showChessCom ? "1px solid var(--ci-border)" : "none",
+            paddingTop: showChessCom ? "12px" : "0",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "12px", fontWeight: "600" }}>
+              {edition === "lichess" ? "♞ Lichess Account" : "♞ Lichess Integration"}
+            </span>
           <span
             style={{
               fontSize: "10px",
@@ -205,7 +238,7 @@ export function Popup() {
         </div>
 
         <p style={{ fontSize: "11px", color: "var(--ci-muted)" }}>
-          Sync games and historical puzzle activity from Lichess mobile into your heatmap.
+          Sync games and puzzles from Lichess. Live puzzles on /training are tracked automatically; add a token to import past puzzle history.
         </p>
 
         <form onSubmit={handleConnectLichess} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -308,6 +341,7 @@ export function Popup() {
           </div>
         </form>
       </section>
+      )}
 
       {/* Sync Footer */}
       <footer style={{ borderTop: "1px solid var(--ci-border)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>

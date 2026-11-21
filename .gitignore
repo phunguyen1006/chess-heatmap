@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-chesscom/
+dist-lichess/
 releases/
 .DS_Store
 *.log

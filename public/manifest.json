@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Chess.com Activity Heatmap",
-  "version": "1.3.2",
-  "description": "Interactive GitHub-style annual activity heatmap directly on your Chess.com homepage.",
+  "name": "Chess Activity Heatmap (Chess.com & Lichess)",
+  "version": "1.4.0",
+  "description": "Interactive GitHub-style annual activity heatmap directly on your Chess.com and Lichess pages.",
   "permissions": [
     "storage",
     "alarms"
@@ -37,6 +37,18 @@
       ],
       "css": [
         "content.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://lichess.org/*"
+      ],
+      "js": [
+        "lichess-content.js"
+      ],
+      "css": [
+        "lichess-content.css"
       ],
       "run_at": "document_idle"
     }

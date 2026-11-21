@@ -138,4 +138,4 @@ export type Request =
   | { type: "ci:puzzle-clear"; username: string }
   | { type: "ci:lichess-connect"; username: string; token?: string }
   | { type: "ci:lichess-disconnect" }
-  | { type: "ci:lichess-sync"; force?: boolean };
+  | { type: "ci:lichess-sync"; force?: boolean; years?: number[] };

@@ -160,6 +160,7 @@ export async function getLichessGames(
   since?: number,
   until?: number,
   max = 300,
+  token?: string,
 ): Promise<LichessRawGame[]> {
   const run = async () => {
     const params = new URLSearchParams({
@@ -171,7 +172,7 @@ export async function getLichessGames(
     if (until) params.set("until", String(until));
 
     const url = `https://lichess.org/api/games/user/${encodeURIComponent(username.toLowerCase())}?${params.toString()}`;
-    const response = await requestLichess(url, undefined, {
+    const response = await requestLichess(url, token, {
       Accept: "application/x-ndjson",
     });
     return parseNdjson<LichessRawGame>(response);

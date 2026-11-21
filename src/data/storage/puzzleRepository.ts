@@ -1,42 +1,118 @@
 import { database, idbResult, transactionDone } from "./database";
 import { localDate } from "../../shared/dates";
 import { getSettings } from "./settingsRepository";
+import { getEdition } from "../../shared/edition";
 import type {
   PuzzleAttempt,
   PuzzleSnapshot,
   PuzzleTrackingState,
 } from "../../shared/types";
 
+export function deduplicatePuzzleAttempts(
+  attempts: PuzzleAttempt[],
+): PuzzleAttempt[] {
+  const byId = new Map<string, PuzzleAttempt>();
+  for (const raw of attempts) {
+    const a: PuzzleAttempt = { ...raw, platform: raw.platform ?? "chesscom" };
+    byId.set(a.id, a);
+  }
+  const unique = [...byId.values()];
+
+  const apiByPuzzle = new Map<string, PuzzleAttempt[]>();
+  for (const a of unique) {
+    if (a.platform === "lichess" && a.source === "lichess_api" && a.puzzleId) {
+      const key = `${a.username.toLowerCase()}:${a.puzzleId}`;
+      const bucket = apiByPuzzle.get(key) ?? [];
+      bucket.push(a);
+      apiByPuzzle.set(key, bucket);
+    }
+  }
+
+  const result: PuzzleAttempt[] = [];
+  for (const a of unique) {
+    if (a.platform === "lichess" && a.source === "live_tracker" && a.puzzleId) {
+      const key = `${a.username.toLowerCase()}:${a.puzzleId}`;
+      const candidates = apiByPuzzle.get(key);
+      const match = candidates?.find(
+        (api) =>
+          api.localDate === a.localDate ||
+          Math.abs(api.attemptedAt - a.attemptedAt) <= 12 * 3600_000,
+      );
+      if (match) {
+        match.ratingBefore ??= a.ratingBefore;
+        match.ratingAfter ??= a.ratingAfter;
+        match.ratingChange ??= a.ratingChange;
+        match.puzzleRating ??= a.puzzleRating;
+        continue;
+      }
+    }
+    result.push(a);
+  }
+
+  return result.sort((a, b) => a.attemptedAt - b.attemptedAt);
+}
+
 export async function puzzleSnapshot(
   username: string,
 ): Promise<PuzzleSnapshot> {
+  const edition = getEdition();
   const settings = await getSettings();
-  const lichessUser = settings.lichessUsername?.toLowerCase();
+  const chessUser =
+    edition === "lichess" ? undefined : settings.username?.toLowerCase();
+  const lichessUser =
+    edition === "chesscom"
+      ? undefined
+      : settings.lichessUsername?.toLowerCase();
+  const accounts = [
+    ...new Set(
+      [username, chessUser, lichessUser]
+        .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+        .map((u) => u.trim().toLowerCase()),
+    ),
+  ];
 
   const tx = (await database()).transaction(
     ["puzzleAttempts", "puzzleTrackingState"],
     "readonly",
   );
-  const [attempts, lichessAttempts, tracking] = await Promise.all([
-    idbResult(
-      tx.objectStore("puzzleAttempts").index("username").getAll(username.toLowerCase()),
-    ) as Promise<PuzzleAttempt[]>,
-    lichessUser && lichessUser !== username.toLowerCase()
-      ? (idbResult(
-          tx.objectStore("puzzleAttempts").index("username").getAll(lichessUser),
-        ) as Promise<PuzzleAttempt[]>)
-      : Promise.resolve([]),
-    idbResult(tx.objectStore("puzzleTrackingState").get(username)) as Promise<
-      PuzzleTrackingState | undefined
-    >,
+  const attemptsStore = tx.objectStore("puzzleAttempts").index("username");
+  const trackingStore = tx.objectStore("puzzleTrackingState");
+
+  const [attemptLists, trackingStates] = await Promise.all([
+    Promise.all(
+      accounts.map(
+        (acc) => idbResult(attemptsStore.getAll(acc)) as Promise<PuzzleAttempt[]>,
+      ),
+    ),
+    Promise.all(
+      accounts.map(
+        (acc) =>
+          idbResult(trackingStore.get(acc)) as Promise<
+            PuzzleTrackingState | undefined
+          >,
+      ),
+    ),
   ]);
 
-  const allAttempts = [...attempts, ...lichessAttempts];
+  const allAttempts = attemptLists.flat().filter((a) => {
+    const aPlatform = a.platform ?? "chesscom";
+    return edition === "all" || aPlatform === edition;
+  });
+  const validTrackings = trackingStates.filter(
+    (t): t is PuzzleTrackingState => !!t,
+  );
+  const primaryTracking =
+    validTrackings.find(
+      (t) => t.username.toLowerCase() === username.toLowerCase(),
+    ) ??
+    validTrackings.sort(
+      (a, b) => a.puzzleTrackingStartedAt - b.puzzleTrackingStartedAt,
+    )[0] ??
+    null;
+
   return {
-    attempts: (allAttempts as PuzzleAttempt[])
-      .map((a) => ({ ...a, platform: a.platform ?? "chesscom" }))
-      .sort((a, b) => a.attemptedAt - b.attemptedAt),
-    tracking: tracking ?? null,
+    attempts: deduplicatePuzzleAttempts(allAttempts),
+    tracking: primaryTracking,
   };
 }
 

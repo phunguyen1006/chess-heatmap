@@ -1,4 +1,5 @@
 import type {
+  Platform,
   PuzzleAttempt,
   PuzzleSnapshot,
   Settings,
@@ -202,6 +203,7 @@ export class PuzzleTrackerMachine {
     private save: (a: PuzzleAttempt) => Promise<unknown>,
     private persist: (s: Session | null) => void = () => undefined,
     restored: Session | null = null,
+    private platform: Platform = "chesscom",
   ) {
     this.session = restoreSession(restored);
     for (const a of this.session?.pending ?? []) this.pending.set(a.id, a);
@@ -277,8 +279,13 @@ export class PuzzleTrackerMachine {
     if (o.puzzleId && !s.puzzleId) s.puzzleId = o.puzzleId;
     if (o.result && !s.attempt && s.state === "active") {
       const now = Date.now();
+      const idPrefix =
+        this.platform === "lichess" ? `lichess:live:${username}` : username;
       s.attempt = {
-        id: `${username}:${s.puzzleId ?? "session"}:${s.key}`,
+        id: `${idPrefix}:${s.puzzleId ?? "session"}:${s.key}`,
+        ...(this.platform === "lichess"
+          ? { platform: "lichess" as const }
+          : {}),
         username,
         puzzleId: s.puzzleId,
         attemptedAt: now,

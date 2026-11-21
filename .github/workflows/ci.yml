@@ -37,4 +37,10 @@ jobs:
           test -f dist/background.js
           test -f dist/content.js
           test -f dist/content.css
+          test -f dist/lichess-content.js
+          test -f dist/lichess-content.css
           test -f dist/icons/icon128.png
+          test -f dist-chesscom/manifest.json
+          test -f dist-chesscom/content.js
+          test -f dist-lichess/manifest.json
+          test -f dist-lichess/lichess-content.js
